@@ -1,10 +1,12 @@
+# This is a Praat script for extracting smothed LPC coordinates for all annotated files in directory. The sound annotation should be on the first Tier, the word information should be on the second Tier.
+
 # read all files from the selected directory -------------------------------------------------------
 
 form Open all files in directory
   comment Directory of sound files
   text directory /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/praat script/sound/
   comment Where do you want to save the results?
-  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/praat script/sound/result.txt
+  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/praat script/sound/results.tcv
   comment On the end of its work this script remove all files from the object window! Be careful!
 endform
 
@@ -18,7 +20,7 @@ for ifile to numberOfFiles
 	gridfile$ = "'directory$''soundname$'.TextGrid"
 	Read from file... 'gridfile$'
 
-# extract labels from the second Tier ------------------------------------------------------------------------
+# extract labels from the second Tier -------------------------------------------------------------
 
 	selectObject: "TextGrid " + soundname$ - ".TextGrid" - ".WAV"
 	n_intervals = Get number of intervals: 1
@@ -27,14 +29,14 @@ for ifile to numberOfFiles
 		value$ [i] = Get label of interval: 2, i*2
 	endfor
 
-# extract fragments and convert to LPC ---------------------------------------------------------------------
+# extract fragments and convert to LPC ----------------------------------------------------------
 
 	plusObject: "Sound " + soundname$ - ".TextGrid" - ".WAV"
 	Extract non-empty intervals: 1, "no"
 	To Spectrum: "yes"
 	LPC smoothing: 5, 50
 
-# extract LPC and write to the file -----------------------------------------------------------------------------
+# extract LPC and write to the file -----------------------------------------------------------------
 	n = numberOfSelected ("Spectrum")
 	for i to n
 		spectrum [i] = selected ("Spectrum", i)
@@ -48,5 +50,8 @@ for ifile to numberOfFiles
 	endfor
 	select Strings list
 endfor
+
+# remove all created files ---------------------------------------------------------------------------
+
 select all
 Remove
