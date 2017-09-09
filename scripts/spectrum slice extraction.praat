@@ -38,10 +38,14 @@ To Spectrum: "yes"
 LPC smoothing: 5, 50
 
 # extract LPC and write to the file -----------------------------------------------------------------------------
+n = numberOfSelected ("Spectrum")
+for i to n
+	spectrum [i] = selected ("Spectrum", i)
+endfor
 
-lpc$ = selected$ ()
-selectObject: lpc$
-data$ = List: "no", "yes", "no", "no", "no", "yes"
-data$ = replace$ (data$, "'newline$'", "'tab$'"+file$ + "'tab$'" + value$ [1] +"'newline$'", 0)
-fileappend "'textfile$'" 'data$'
-
+for i to n
+	selectObject: spectrum [i]
+	data$ = List: "no", "yes", "no", "no", "no", "yes"
+	data$ = replace$ (data$, "'newline$'", "'tab$'"+file$ + "'tab$'" + value$ [i] +"'newline$'", 0)
+	fileappend "'textfile$'" 'data$'
+endfor
