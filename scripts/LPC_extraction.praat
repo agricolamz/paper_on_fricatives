@@ -2,13 +2,16 @@
 
 # read all files from the selected directory -------------------------------------------------------
 
-form Open all files in directory
-  comment Directory of sound files
-  text directory /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/praat script/sound/
-  comment Where do you want to save the results?
-  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/praat script/sound/results.tcv
-  comment On the end of its work this script remove all files from the object window! Be careful!
-endform
+# form Open all files in directory
+#  comment Directory of sound files
+#  text directory /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/sound/
+#  comment Where do you want to save the results?
+#  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/github/data/LPC_results.csv
+#  comment On the end of its work this script remove all files from the object window! Be careful!
+#endform
+
+directory$ = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/sound/"
+resultfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/github/data/LPC_results.csv"
 
 Create Strings as file list: "list", directory$ + "/*.WAV"
 numberOfFiles = Get number of strings
