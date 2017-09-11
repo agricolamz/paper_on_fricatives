@@ -6,14 +6,14 @@
 #  comment Directory of sound files
 #  text directory /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/sound/
 #  comment Where do you want to save the results?
-#  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/github/data/LPC_results.csv
+#  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/data/LPC_results.csv
 #  comment On the end of its work this script remove all files from the object window! Be careful!
 #endform
 
-directory$ = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/sound/"
-resultfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/github/data/LPC_results.csv"
+directory$ = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/sound/"
+resultfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data/LPC_results.csv"
 
-Create Strings as file list: "list", directory$ + "/*.WAV"
+Create Strings as file list: "list", directory$ + "/*.wav"
 numberOfFiles = Get number of strings
 
 for ifile to numberOfFiles
@@ -25,7 +25,7 @@ for ifile to numberOfFiles
 
 # extract labels from the second Tier -------------------------------------------------------------
 
-	selectObject: "TextGrid " + soundname$ - ".TextGrid" - ".WAV"
+	selectObject: "TextGrid " + soundname$ - ".TextGrid" - ".wav"
 	n_intervals = Get number of intervals: 1
 	n_intervals = (n_intervals - 1)/2
 	for i from 1 to n_intervals
@@ -44,6 +44,8 @@ for ifile to numberOfFiles
 	for i to n
 		spectrum [i] = selected ("Spectrum", i)
 	endfor
+
+	writeInfoLine: soundname$
 
 	for i to n
 		selectObject: spectrum [i]
