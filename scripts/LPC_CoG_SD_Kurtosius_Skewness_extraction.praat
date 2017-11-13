@@ -12,6 +12,9 @@
 
 directory$ = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/sound/"
 resultfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data/LPC_results.csv"
+cogfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data/CoG_results.csv"
+header$ = "soundname" + "'tab$'" + "value" +"'tab$'"+"cog"+"'tab$'"+"sd"+"'tab$'"+"skewness"+"'tab$'"+"kurtosis"+"'newline$'"
+fileappend "'cogfile$'" 'header$'
 
 Create Strings as file list: "list", directory$ + "/*.wav"
 numberOfFiles = Get number of strings
@@ -52,6 +55,14 @@ for ifile to numberOfFiles
 		data$ = List: "no", "yes", "no", "no", "no", "yes"
 		data$ = replace$ (data$, "'newline$'", "'tab$'"+soundname$ + "'tab$'" + value$ [i] +"'newline$'", 0)
 		fileappend "'resultfile$'" 'data$'
+		cog$ = Get centre of gravity: 2
+		sd$ = Get standard deviation: 2
+		skewness$ = Get skewness: 2
+		kurtosis$ = Get kurtosis: 2
+		cog$ = replace$ (cog$, " hertz", "", 0)
+		sd$ = replace$ (sd$, " hertz", "", 0)
+		cog$ = soundname$ + "'tab$'" + value$ [i] +"'tab$'"+cog$+"'tab$'"+sd$+"'tab$'"+skewness$+"'tab$'"+kurtosis$+"'newline$'"
+		fileappend "'cogfile$'" 'cog$'
 	endfor
 	select Strings list
 endfor

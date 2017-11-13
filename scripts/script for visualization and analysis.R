@@ -1,7 +1,7 @@
 library(tidyverse); library(stringr)
 
 # upload and clean data ---------------------------------------------------
-setwd("/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/github/data")
+setwd("/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data")
 LPC_df <- read_lines("LPC_results.csv")
 LPC_df <- LPC_df[!str_detect(LPC_df, "freq\\(Hz\\)")]
 write_lines(LPC_df, "LPC_results.csv")
@@ -28,7 +28,8 @@ cepstral_df$dictor <- str_extract(cepstral_df$file_name, "_d.{1,2}_")
 
 # draw the plot -----------------------------------------------------------
 LPC_df %>% 
-  filter(language == "adyghe") %>%
+  #slice(1:136732*58) %>% 
+  filter(language == "udmurt") %>%
   ggplot(aes(x = frequency, 
              y = power,
              color = token))+
@@ -36,7 +37,8 @@ LPC_df %>%
   theme_bw()+
   theme(legend.position = "none")+
   labs(title = "LPC smoothing for different speakers")+
-  facet_wrap(~dictor)
+  facet_wrap(~dictor)+
+  ylim(-20, 60)
 
 cepstral_df %>% 
   ggplot(aes(x = frequency, 
@@ -47,13 +49,14 @@ cepstral_df %>%
   labs(title = "Cepstral smoothing for different speakers")+
   facet_wrap(~dictor)
 
-cepstral_df %>%
+LPC_df %>%
+  filter(grepl("chukchi", language)) %>%
   ggplot(aes(x = frequency, 
-             y = power,
-             color = dictor))+
+             y = power))+
   stat_summary(fun.data ="mean_sdl", geom = "smooth")+
   theme_bw()+
-  labs(title = "Cepstral smoothing for different speakers")+
+  theme(legend.position = "none")+
+  labs(title = "LPC smoothing for speakers of Chukchi")+
   facet_wrap(~language)
 
 LPC_df %>%
