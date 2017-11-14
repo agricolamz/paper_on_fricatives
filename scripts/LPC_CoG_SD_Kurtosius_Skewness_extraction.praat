@@ -48,8 +48,6 @@ for ifile to numberOfFiles
 		spectrum [i] = selected ("Spectrum", i)
 	endfor
 
-	writeInfoLine: soundname$
-
 	for i to n
 		selectObject: spectrum [i]
 		data$ = List: "no", "yes", "no", "no", "no", "yes"

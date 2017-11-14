@@ -1,4 +1,4 @@
-library(tidyverse); library(stringr)
+library(dplyr); library(readr); library(tidyr); library(ggplot2); library(stringr)
 
 # upload and clean data ---------------------------------------------------
 setwd("/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data")
@@ -76,3 +76,98 @@ LPC_df %>%
 fit <- lm(frequency~poly(power, 7), data = LPC_df)
 summary(fit)
 
+
+# NEW DATA ----------------------------------------------------------------
+df <- read_tsv("CoG_results.csv")
+
+df$utterance <- str_extract(df$value, "1|2|3|4|5|6|cf")
+df$language <- str_extract(df$soundname, "kabardian|adyghe|nanai|udmurt|chukchi|russian|ubykh")
+df$dictor <- str_extract(df$soundname, "_d.{1,2}")
+df$dictor <- str_replace_all(df$dictor, "_", "")
+df$stimulus <- str_replace_all(df$value, "[0-9]$", "")
+df$stimulus <- str_replace_all(df$stimulus, "[0-9]$", "")
+df$stimulus <- str_replace_all(df$stimulus, "_", "")
+df$stimulus <- str_replace(df$stimulus, "cf$", "")
+df$stimulus <- str_replace(df$stimulus, "cf_$", "")
+
+stimuli <- read_tsv("stimuli.csv")
+
+stimuli$language <- tolower(stimuli$language)
+
+df %>% 
+  left_join(stimuli) %>% 
+  filter(dictor != "d32")->
+  df
+
+df %>% 
+  ggplot(aes(dictor, cog, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Center of Gravity") -> picture_1
+
+df %>% 
+  filter(position == "asa" |
+  position == "əsa" |
+  position == "isa" |
+  position == "#sa" |
+  position == "#sɐ") %>%
+  ggplot(aes(dictor, cog, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Center of Gravity") -> picture_2
+
+df %>% 
+  filter(position != "asa" |
+           position != "əsa" |
+           position != "isa" |
+           position != "#sa" |
+           position != "#sɐ") %>%
+  ggplot(aes(dictor, cog, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Center of Gravity") -> picture_3
+
+df %>% 
+  ggplot(aes(dictor, sd, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Standard deviation")
+
+df %>% 
+  ggplot(aes(dictor, skewness, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Skewness")
+
+df %>% 
+  ggplot(aes(dictor, kurtosis, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Kurtosis")
+
+write_tsv(df, "selection.tsv")
+selected <- read_tsv("selection.tsv")
+
+
+selected %>% 
+  ggplot(aes(dictor, cog, color = language))+
+  geom_point()+
+  theme_bw()+
+  ggtitle("Center of Gravity")
+
+selected$cog_bark <- 13*atan(0.00076*selected$cog) +
+  3.5*atan((selected$cog/7500)^2)
+
+selected %>% 
+  ggplot(aes(dictor, cog_bark))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Center of Gravity (in barks)",
+       subtitle = "sample from all our data")
+
+selected %>% 
+  group_by(dictor) %>% 
+  summarise(iqr = IQR(cog_bark)*1.5,
+            median = median(cog_bark)) %>% 
+  right_join(selected) ->
