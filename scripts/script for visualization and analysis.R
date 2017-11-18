@@ -1,4 +1,4 @@
-library(dplyr); library(readr); library(tidyr); library(ggplot2); library(stringr)
+library(tidyverse)
 
 # upload and clean data ---------------------------------------------------
 setwd("/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data")
@@ -248,37 +248,31 @@ df %>%
 
 selected <- read_tsv("selection.tsv")
 
-
-selected %>% 
-  ggplot(aes(dictor, cog, color = language))+
-  geom_point()+
-  theme_bw()+
-  ggtitle("Center of Gravity")
-
 selected$cog_bark <- 13*atan(0.00076*selected$cog) +
   3.5*atan((selected$cog/7500)^2)
-
-selected %>% 
-  ggplot(aes(dictor, cog_bark))+
-  geom_boxplot(aes(fill = language))+
-  geom_point()+
-  theme_bw()+
-  labs(title = "Center of Gravity (in barks)",
-       subtitle = "sample from all our data")
 
 selected %>% 
   ggplot(aes(dictor, cog))+
   geom_boxplot(aes(fill = language))+
   geom_point()+
   theme_bw()+
-  labs(title = "Center of Gravity (in Hertz)",
-       subtitle = "sample from all our data")
+  labs(title = "Center of Gravity", y = "Frequency (Hz)", x = "")+
+  scale_fill_brewer(palette="Set1")+
+  theme(legend.position="bottom")
 
+selected %>% 
+  ggplot(aes(dictor, cog_bark))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Center of Gravity", y = "Bark", x = "")+
+  scale_fill_brewer(palette="Set1")+
+  theme(legend.position="bottom")
 
 # get slopes and max ------------------------------------------------------
 
 LPC_df %>% 
-  filter(dictor == "d9") %>%
+  filter(dictor == "d51") %>%
   gather(key = measurement, value = value, c(Hertz, Bark)) %>% 
   ggplot(aes(x = value, 
              y = power,
@@ -313,3 +307,273 @@ LPC_df %>%
             Hertz_slope = lm(power[min:max]~Hertz[min:max])$coefficients[2]) %>% 
   select(max_Hertz, Hertz_slope) %>% 
   View()
+
+
+
+# analyse slopes ----------------------------------------------------------
+selected %>% 
+  ggplot(aes(slope_Bark, slope_Hertz, color = language)) +
+  geom_point()+
+  theme_bw()
+
+selected %>% 
+  ggplot(aes(max_Bark, max_Hertz, color = language)) +
+  geom_point()+
+  theme_bw()
+
+selected %>% 
+  ggplot(aes(dictor, max_Hertz))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Maximum of the first peak", y = "Frequency (Hertz)", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+
+selected %>% 
+  ggplot(aes(dictor, max_Bark))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Slope", y = "Bark", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+selected %>% 
+  ggplot(aes(dictor, slope_Hertz))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Slope", y = "Frequency (Hertz)", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+selected %>% 
+  ggplot(aes(dictor, max_Bark))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Slope", y = "Bark", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+selected %>% 
+  ggplot(aes(dictor, skewness))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Skewness", y = "skewness", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+selected %>% 
+  ggplot(aes(dictor, kurtosis))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  theme_bw()+
+  labs(title = "Kurtosis", y = "kurtosis", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1")
+
+
+
+# PCA analysis ------------------------------------------------------------
+pca_all <- prcomp(selected[,c(3:6, 14:18)], scale. = TRUE)
+pca_bark <- prcomp(selected[,c(4:6, 14:15, 18)], scale. = TRUE)
+pca_hertz <- prcomp(selected[,c(3:6, 16:17)], scale. = TRUE)
+
+pca_importance <-
+  data_frame(
+    value = c(
+      summary(pca_all)$importance[2, ],
+      summary(pca_hertz)$importance[2, ],
+      summary(pca_bark)$importance[2, ]
+    ),
+    pcas = c(
+      names(summary(pca_all)$importance[2, ]),
+      names(summary(pca_hertz)$importance[2, ]),
+      names(summary(pca_bark)$importance[2, ])
+    ),
+    model = c(
+      rep("all_variables", 9),
+      rep("bark_variables", 6),
+      rep("hertz_variables", 6)
+    ),
+    feature = "proportion of variance"
+  )
+
+cumulative_proportion <-
+  data_frame(
+    value = c(
+      summary(pca_all)$importance[3, ],
+      summary(pca_hertz)$importance[3, ],
+      summary(pca_bark)$importance[3, ]
+    ),
+    pcas = c(
+      names(summary(pca_all)$importance[3, ]),
+      names(summary(pca_hertz)$importance[3, ]),
+      names(summary(pca_bark)$importance[3, ])
+    ),
+    model = c(
+      rep("all_variables", 9),
+      rep("bark_variables", 6),
+      rep("hertz_variables", 6)
+    ),
+    feature = "cumulative proportion"
+  )
+
+pca_imp <- rbind(pca_importance, cumulative_proportion)
+
+pca_imp %>% 
+  mutate(model = str_replace(model, "_", " ")) %>% 
+  ggplot(aes(pcas, value, label = round(value, 2)))+
+  geom_col(fill = "lightblue")+
+  geom_text(aes(y = value + 0.05))+
+  facet_grid(feature~model, scales = "free_x")+
+  theme_bw()+
+  labs(x = "", y = "",
+       title = "Impact of each PC in different models")
+
+# plot biplots -------------------------------------------------------------
+selected_all <- cbind(selected, pca_all$x)
+
+rotations <- function(PC, x = "PC1", y = "PC2") {
+  datapc <- data.frame(varnames = rownames(PC$rotation), PC$rotation)
+  mult <- min((max(data[, y]) - min(data[, y]) / (max(datapc[, y]) - min(datapc[, y]))),
+              (max(data[, x]) - min(data[, x]) / (max(datapc[, x]) - min(datapc[, x]))))
+  datapc <- transform(datapc,
+                      v1 = .7 * mult * (get(x)),
+                      v2 = .7 * mult * (get(y)))}
+
+biplot_labs <- function(PC, x = "PC1", y = "PC2") {
+  paste0(names(summary(pca_all)$importance[2, c(x, y)]),
+                 " (",
+                 round(summary(pca_all)$importance[2, c(x, y)], 2) * 100,
+                 "%)")
+}
+
+selected_all %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point(aes(color = language)) +
+  theme_bw()+
+  coord_equal() + 
+  geom_text(data=rotations(pca_all), 
+            aes(x=v1, y=v2, label=varnames), size = 5, vjust=1, color="red")+
+  geom_segment(data=rotations(pca_all),
+               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red")+
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with all variables")
+
+selected_hertz <- cbind(selected, pca_hertz$x)
+
+selected_hertz %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point(aes(color = language)) +
+  theme_bw()+
+  coord_equal() + 
+  geom_text(data=rotations(pca_hertz), 
+            aes(x=v1, y=v2, label=varnames), size = 5, vjust=1, color="red")+
+  geom_segment(data=rotations(pca_hertz),
+               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red")+
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with Hertz variables")
+
+
+selected_bark <- cbind(selected, pca_bark$x)
+
+selected_bark %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point(aes(color = language)) +
+  theme_bw()+
+  coord_equal() + 
+  geom_text(data=rotations(pca_bark), 
+            aes(x=v1, y=v2, label=varnames), size = 5, vjust=1, color="red")+
+  geom_segment(data=rotations(pca_bark),
+               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red")+
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with Bark variables")
+
+# create ellipses ---------------------------------------------------------
+
+selected_all %>% 
+  ggplot(aes(x=PC1, y=PC2, color = language)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse()+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with all variables")
+
+selected_bark %>% 
+  ggplot(aes(x=PC1, y=PC2, color = language)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse()+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with Bark variables")
+
+selected_hertz %>% 
+  ggplot(aes(x=PC1, y=PC2, color = language)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse()+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with Hertz variables")
+
+selected_all %>% 
+  ggplot(aes(x=PC1, y=PC2, color = language)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse(aes(group = dictor))+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with all variables")
+
+
+selected_all %>% 
+  filter(language == "russian") %>% 
+  ggplot(aes(x=PC1, y=PC2, color = utterance)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse(aes(group = utterance, color = utterance))+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
+       title = "PCA with all variables")
+
+
+# map ---------------------------------------------------------------------
+
+library(lingtypology)
+
+map.feature(
+  languages = c("Russian", "Adyghe", "Nanai", "Chukchi", "Udmurt", "Turkish"),
+  label = c("русский", "адыгейский", "нанайский", "чукотский","бесермянский", "убыхский"),
+  label.hide = FALSE
+)
