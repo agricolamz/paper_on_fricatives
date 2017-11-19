@@ -110,7 +110,7 @@ LPC_df %>%
   geom_line()+
   theme_bw()+
   theme(legend.position = "none")+
-  labs(title = "LPC smoothing for different Ubykh speakers")+
+  labs(title = "LPC smoothing for Ubykh speaker")+
   facet_grid(dictor~measurement, scales = "free")
 
 # cepstral_df %>% 
@@ -558,6 +558,20 @@ selected_bark %>%
   scale_color_brewer(palette="Set1")+
   labs(x = biplot_labs(pca_bark)[1], y = biplot_labs(pca_bark)[2],
        title = "PCA with Bark variables: ellipse for each speaker")+
+  theme(legend.position="bottom")
+
+selected_bark %>% 
+  mutate(position = ifelse(position == "#sa", "#sa", "Vsa")) %>% 
+  ggplot(aes(x=PC1, y=PC2, color = position)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point()+
+  stat_ellipse(aes(group = position))+
+  theme_bw()+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = biplot_labs(pca_bark)[1], y = biplot_labs(pca_bark)[2],
+       title = "PCA with Bark variables: ellipse for different phonological positions")+
   theme(legend.position="bottom")
 
 # different utterance -----------------------------------------------------
