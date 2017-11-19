@@ -560,13 +560,18 @@ selected_bark %>%
        title = "PCA with Bark variables: ellipse for each speaker")+
   theme(legend.position="bottom")
 
+
+# different positions -----------------------------------------------------
 selected_bark %>% 
-  mutate(position = ifelse(position == "#sa", "#sa", "Vsa")) %>% 
-  ggplot(aes(x=PC1, y=PC2, color = position)) + 
+  mutate(position = ifelse(position == "#sa", "#sa", "Vsa")) -> 
+  selected_bark_position
+selected_bark_position %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
   geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
   geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
-  geom_point()+
-  stat_ellipse(aes(group = position))+
+  geom_point(color = "grey")+
+  geom_point(data = selected_bark_position[89:146,], aes(color = position))+
+  stat_ellipse(data = selected_bark_position[89:146,], aes(color = position))+
   theme_bw()+
   coord_equal() + 
   scale_color_brewer(palette="Set1")+
