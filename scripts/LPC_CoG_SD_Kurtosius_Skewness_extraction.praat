@@ -4,15 +4,15 @@
 
 # form Open all files in directory
 #  comment Directory of sound files
-#  text directory /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/sound/
+#  text directory /home/agricolamz/work/articles/2017 II s (with Inna Sieber)/sound/
 #  comment Where do you want to save the results?
-#  text resultfile /home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 I s (with Inna Sieber)/data/LPC_results.csv
+#  text resultfile /home/agricolamz/work/articles/2017 II s (with Inna Sieber)/data/LPC_results.csv
 #  comment On the end of its work this script remove all files from the object window! Be careful!
 #endform
 
-directory$ = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/sound/"
-resultfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data/LPC_results.csv"
-cogfile$  = "/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data/CoG_results.csv"
+directory$ = "/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/sound/"
+resultfile$  = "/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/data/LPC_results.csv"
+cogfile$  = "/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/data/CoG_results.csv"
 header$ = "soundname" + "'tab$'" + "value" +"'tab$'"+"cog"+"'tab$'"+"sd"+"'tab$'"+"skewness"+"'tab$'"+"kurtosis"+"'newline$'"
 fileappend "'cogfile$'" 'header$'
 
@@ -40,7 +40,7 @@ for ifile to numberOfFiles
 	plusObject: "Sound " + soundname$ - ".TextGrid" - ".WAV"
 	Extract non-empty intervals: 1, "no"
 	To Spectrum: "yes"
-	LPC smoothing: 5, 50
+	LPC smoothing: 20, 50
 
 # extract LPC and write to the file -----------------------------------------------------------------
 	n = numberOfSelected ("Spectrum")

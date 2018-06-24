@@ -1,7 +1,10 @@
 library(tidyverse)
+library(extrafont)
+font_import("Times New Roman")
 
+theme_set(theme_bw()+theme(text = element_text(size = 14, family = "Times New Roman")))
 # upload and clean data ---------------------------------------------------
-setwd("/home/agricolamz/_DATA/OneDrive1/_Work/Articles/2017 II s (with Inna Sieber)/data")
+setwd("/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/data_that_doesn't_fit_github/")
 LPC_df <- read_lines("LPC_results.csv")
 LPC_df <- LPC_df[!str_detect(LPC_df, "freq\\(Hz\\)")]
 write_lines(LPC_df, "LPC_results.csv")
@@ -9,7 +12,6 @@ rm(LPC_df)
 
 LPC_df <- read_tsv("LPC_results.csv", col_names = FALSE)
 names(LPC_df) <- c("Hertz", "power", "soundname", "token")
-
 selected <- read_tsv("selection.tsv")
 
 LPC_df %>% 
@@ -17,7 +19,7 @@ LPC_df %>%
   LPC_df
 
 write_lines(LPC_df, "LPC_df_selected.tsv")
-
+setwd("/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/data_that_doesn't_fit_github/")
 LPC_df <- read_tsv("LPC_df_selected.tsv")
 
 LPC_df$utterance <- str_extract(LPC_df$token, "1|2|3|4|5|6|cf")
@@ -28,17 +30,6 @@ names(LPC_df)[1] <- "Hertz"
 LPC_df$Bark <- 13*atan(0.00076*LPC_df$Hertz) +
   3.5*atan((LPC_df$Hertz/7500)^2)
 
-# cepstral_df <- read_lines("cepstral_results.csv")
-# cepstral_df <- cepstral_df[!str_detect(cepstral_df, "freq\\(Hz\\)")]
-# write_lines(cepstral_df, "cepstral_results.csv")
-# rm(cepstral_df)
-# 
-# cepstral_df <- read_tsv("cepstral_results.csv", col_names = FALSE)
-# names(cepstral_df) <- c("Hertz", "power", "file_name", "token")
-# 
-# cepstral_df$utterance <- str_extract(cepstral_df$token, "1|2|3|4|5|6|cf")
-# cepstral_df$language <- str_extract(cepstral_df$soundname, "kabardian|adyghe|nanai|udmurt|chukchi|russian|ubykh")
-# cepstral_df$dictor <- str_extract(cepstral_df$soundname, "_d.{1,2}_")
 
 # draw the plot -----------------------------------------------------------
 LPC_df %>% 
@@ -151,6 +142,7 @@ summary(fit)
 
 
 # NEW DATA ----------------------------------------------------------------
+setwd("/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/github/data/")
 df <- read_tsv("CoG_results.csv")
 
 df$utterance <- str_extract(df$value, "1|2|3|4|5|6|cf")
@@ -248,6 +240,10 @@ df %>%
 
 selected <- read_tsv("selection.tsv")
 
+df %>% 
+  right_join(selected) ->
+  selected
+
 selected$cog_Bark <- 13*atan(0.00076*selected$cog) +
   3.5*atan((selected$cog/7500)^2)
 
@@ -270,22 +266,23 @@ selected %>%
   theme(legend.position="bottom")
 
 # get slopes and max ------------------------------------------------------
-
+next_dictor <- "d16"
 LPC_df %>% 
-  filter(dictor == "d51") %>%
+  filter(dictor == next_dictor, 
+         token == "sajrakta_2") %>%
   gather(key = measurement, value = value, c(Hertz, Bark)) %>% 
+  mutate(measurement = if_else(measurement == "Hertz", "Герц", "барк")) %>% 
+  filter(measurement == "барк") %>%
   ggplot(aes(x = value, 
-             y = power,
-             color = token))+
-  geom_line()+
-  theme_bw()+
-  labs(title = "LPC smoothing for different Udmurt speakers")+
-  facet_grid(~measurement, scales = "free")
+             y = power))+
+  geom_line(show.legend = FALSE)+
+  labs(x = "", y = "интенсивность (дБ)")+
+  theme(text = element_text(size = 14, family = "Times New Roman"))
 
 LPC_df %>% 
-  filter(dictor == "d9",
-         Bark > 10,
-         Bark < 20.5) %>%
+  filter(dictor == next_dictor,
+        Bark > 17,
+        Bark < 21) %>%
   group_by(token) %>% 
   summarise(min = which(power == min(power)),
             max = which(power == max(power)),
@@ -296,9 +293,9 @@ LPC_df %>%
   View()
 
 LPC_df %>% 
-  filter(dictor == "d9",
-         Hertz > 1000,
-         Hertz < 7000) %>%
+  filter(dictor == next_dictor,
+         Hertz > 4000,
+         Hertz < 6500) %>%
   group_by(token) %>% 
   summarise(min = which(power == min(power)),
             max = which(power == max(power)),
@@ -307,7 +304,22 @@ LPC_df %>%
             Hertz_slope = lm(power[min:max]~Hertz[min:max])$coefficients[2]) %>% 
   select(max_Hertz, Hertz_slope) %>% 
   View()
+# add data about sloups and max -------------------------------------------
+selected <- read_tsv("data_from_slopes_and_peaks.csv")
 
+selected <- left_join(selected, df)
+
+selected %>% 
+  filter(is.na(delete)) %>% 
+  select(-delete) ->
+  selected
+
+selected$sd_bark <- 13*atan(0.00076*selected$sd) +
+  3.5*atan((selected$sd/7500)^2)
+
+write_tsv(selected, "final_dataset.tsv")
+
+selected <- read_tsv("final_dataset.tsv")
 
 
 # analyse slopes ----------------------------------------------------------
@@ -376,12 +388,10 @@ selected %>%
   theme(legend.position="bottom")+
   scale_fill_brewer(palette="Set1")
 
-
-
 # PCA analysis ------------------------------------------------------------
-pca_all <- prcomp(selected[,c(3:6, 14:18)], scale. = TRUE)
-pca_bark <- prcomp(selected[,c(4:6, 14:15, 18)], scale. = TRUE)
-pca_hertz <- prcomp(selected[,c(3:6, 16:17)], scale. = TRUE)
+pca_all <- prcomp(selected[,c(3:6, 8:11, 19)], scale. = TRUE)
+pca_bark <- prcomp(selected[,c(3:4,19, 9:11)], scale. = TRUE)
+pca_hertz <- prcomp(selected[,c(5:6, 8:11)], scale. = TRUE)
 
 pca_importance <-
   data_frame(
@@ -396,11 +406,11 @@ pca_importance <-
       names(summary(pca_bark)$importance[2, ])
     ),
     model = c(
-      rep("all_variables", 9),
-      rep("hertz_variables", 6),
-      rep("bark_variables", 6)
+      rep("все переменные", 9),
+      rep("переменные в Герцах", 6),
+      rep("переменные в барках", 6)
     ),
-    feature = "proportion of variance"
+    feature = "абсолютное значение"
   )
 
 cumulative_proportion <-
@@ -416,11 +426,11 @@ cumulative_proportion <-
       names(summary(pca_bark)$importance[3, ])
     ),
     model = c(
-      rep("all_variables", 9),
-      rep("hertz_variables", 6),
-      rep("bark_variables", 6)
+      rep("все переменные", 9),
+      rep("переменные в Герцах", 6),
+      rep("переменные в барках", 6)
     ),
-    feature = "cumulative proportion"
+    feature = "кумулятивное значение"
   )
 
 pca_imp <- rbind(pca_importance, cumulative_proportion)
@@ -429,11 +439,11 @@ pca_imp %>%
   mutate(model = str_replace(model, "_", " ")) %>% 
   ggplot(aes(pcas, value, label = round(value, 2)))+
   geom_col(fill = "lightblue")+
-  geom_text(aes(y = value + 0.05))+
+  geom_text(aes(y = value + 0.05), family = "Times New Roman")+
   facet_grid(feature~model, scales = "free_x")+
   theme_bw()+
-  labs(x = "", y = "",
-       title = "Impact of each PC in different models")
+  labs(x = "", y = "")+
+  theme(text = element_text(size = 14, family = "Times New Roman"))
 
 # plot biplots -------------------------------------------------------------
 rotations <- function(PC, x = "PC1", y = "PC2") {
@@ -451,23 +461,62 @@ biplot_labs <- function(PC, x = "PC1", y = "PC2") {
                  "%)")
 }
 
-selected_all <- cbind(selected, pca_all$x)
+selected_all <- cbind(selected, pca_bark$x)
 
+rus_labels <- c("максимум", "угл. коэффициент", "центр масс", "ст. отклонение", "асимметрия", "эксцесс")
 selected_all %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
   ggplot(aes(x=PC1, y=PC2)) + 
   geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
   geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
-  geom_point(aes(color = language)) +
-  theme_bw()+
+  geom_point(aes(color = language), alpha = 0.5)+
   coord_equal() + 
-  geom_text(data=rotations(pca_all), 
-            aes(x=v1, y=v2, label=varnames), size = 5, vjust=1, color="red")+
-  geom_segment(data=rotations(pca_all),
-               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red")+
+  geom_text(data=rotations(pca_bark), 
+            aes(x=v1*0.85, y=v2*1.09, label=rus_labels), size = 4, vjust=1, family = "Times New Roman")+
+  geom_segment(data=rotations(pca_bark),
+               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75)+
   scale_color_brewer(palette="Set1")+
-  labs(x = biplot_labs(pca_all)[1], y = biplot_labs(pca_all)[2],
-       title = "PCA with all variables")+
-  theme(legend.position="bottom")
+  labs(x = "ГК1 (37%)", y = "ГК2 (20%)")+
+  theme(legend.title = element_blank())+
+  stat_ellipse(aes(color = language))
+
+selected_all %>% 
+  group_by(language) %>% 
+  mutate(centroid_PC1 = mean(PC1), 
+         centroid_PC2 = mean(PC2),
+         distance = sqrt((PC1-centroid_PC1)^2+(PC2-centroid_PC2)^2),
+         mean_distance = mean(distance),
+         sd_distance = sd(distance)) %>% 
+  ungroup() ->
+  selected_all
+
+
+selected_all %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_segment(aes(xend = centroid_PC1, yend = centroid_PC2), alpha = 0.8, linetype = 2)+
+  geom_point()+
+  geom_point(aes(x = centroid_PC1, y = centroid_PC2), size = 4, shape = 23, fill = "white")+
+  geom_text(aes(label = paste(round(mean_distance, 3), 
+                              "±", 
+                              round(sd_distance, 3))),
+            x = -6, y = -7, alpha = 0.05, family = "Times New Roman")+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = "ГК1 (37%)", y = "ГК2 (20%)")+
+  theme(legend.position="bottom")+
+  facet_wrap(~language)
+
 
 selected_hertz <- cbind(selected, pca_hertz$x)
 
@@ -576,14 +625,14 @@ selected_bark_position %>%
   coord_equal() + 
   scale_color_brewer(palette="Set1")+
   labs(x = biplot_labs(pca_bark)[1], y = biplot_labs(pca_bark)[2],
-       title = "PCA with Bark variables: ellipse for different phonological positions")+
+       title = "PCA with Bark variables: different phonological positions for Russian speakers")+
   theme(legend.position="bottom")
 
 # different utterance -----------------------------------------------------
-selected_bark %>% 
+selected_hertz %>% 
   filter(utterance != "4") ->
-  selected_bark_without_4
-selected_bark_without_4 %>% 
+  selected_hertz_without_4
+selected_hertz_without_4 %>% 
   ggplot(aes(x=PC1, y=PC2)) + 
   geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
   geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
@@ -594,7 +643,8 @@ selected_bark_without_4 %>%
   coord_equal() + 
   scale_color_brewer(palette="Set1")+
   labs(x = biplot_labs(pca_bark)[1], y = biplot_labs(pca_bark)[2],
-       title = "PCA with bark variables: different utterances for Russian speakers")+
+       title = "Метод главных компонент с герцевыми переменными",
+       subtitle = "Номер повторения и в контрольной фразе (cf)")+
   theme(legend.position="bottom")
 
 
@@ -661,3 +711,193 @@ map.feature(
 )
 
 
+# all graphs --------------------------------------------------------------
+setwd("/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/github/data/")
+selected <- read_tsv("final_dataset.tsv")
+pca_all <- prcomp(selected[,c(3:6, 8:11, 15, 16)], scale. = TRUE)
+pca_bark <- prcomp(selected[,c(3:4,15, 16, 10:11)], scale. = TRUE)
+pca_hertz <- prcomp(selected[,c(5:6, 8:11)], scale. = TRUE)
+
+pca_importance <-
+  data_frame(
+    value = c(
+      summary(pca_all)$importance[2, ],
+      summary(pca_hertz)$importance[2, ],
+      summary(pca_bark)$importance[2, ]
+    ),
+    pcas = c(
+      names(summary(pca_all)$importance[2, ]),
+      names(summary(pca_hertz)$importance[2, ]),
+      names(summary(pca_bark)$importance[2, ])
+    ),
+    model = c(
+      rep("все переменные", 10),
+      rep("переменные в Герцах", 6),
+      rep("переменные в барках", 6)
+    ),
+    feature = "абсолютное значение"
+  )
+
+cumulative_proportion <-
+  data_frame(
+    value = c(
+      summary(pca_all)$importance[3, ],
+      summary(pca_hertz)$importance[3, ],
+      summary(pca_bark)$importance[3, ]
+    ),
+    pcas = c(
+      names(summary(pca_all)$importance[3, ]),
+      names(summary(pca_hertz)$importance[3, ]),
+      names(summary(pca_bark)$importance[3, ])
+    ),
+    model = c(
+      rep("все переменные", 10),
+      rep("переменные в Герцах", 6),
+      rep("переменные в барках", 6)
+    ),
+    feature = "кумулятивное значение"
+  )
+
+pca_imp <- rbind(pca_importance, cumulative_proportion)
+
+pca_imp %>% 
+  mutate(model = str_replace(model, "_", " "),
+         pcas = str_replace(pcas, "PC", "ГК"),
+         pcas = factor(pcas, levels = c("ГК1", "ГК2", "ГК3", "ГК4", "ГК5", "ГК6", "ГК7", "ГК8", "ГК9", "ГК10"))) %>% 
+  ggplot(aes(pcas, value, label = round(value, 2)))+
+  geom_col(fill = "lightblue")+
+  geom_text(aes(y = value + 0.05), family = "Times New Roman")+
+  facet_grid(feature~model, scales = "free_x")+
+  theme_bw()+
+  labs(x = "", y = "")+
+  theme(text = element_text(size = 14, family = "Times New Roman"))
+
+rotations <- function(PC, x = "PC1", y = "PC2") {
+  datapc <- data.frame(varnames = rownames(PC$rotation), PC$rotation)
+  mult <- min((max(PC$x[, y]) - min(PC$x[, y]) / (max(datapc[, y]) - min(datapc[, y]))),
+              (max(PC$x[, x]) - min(PC$x[, x]) / (max(datapc[, x]) - min(datapc[, x]))))
+  datapc <- transform(datapc,
+                      v1 = .7 * mult * (get(x)),
+                      v2 = .7 * mult * (get(y)))}
+
+biplot_labs <- function(PC, x = "PC1", y = "PC2") {
+  paste0(names(summary(PC)$importance[2, c(x, y)]),
+         " (",
+         round(summary(PC)$importance[2, c(x, y)], 2) * 100,
+         "%)")
+}
+
+selected_all <- cbind(selected, pca_bark$x)
+
+rus_labels <- c("максимум", "угл. коэффициент", "центр масс", "ст. отклонение", "асимметрия", "эксцесс")
+
+selected_all %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point(aes(color = language), alpha = 0.5)+
+  coord_equal() + 
+  geom_text(data=rotations(pca_bark), 
+            aes(x=v1*0.8, y=v2*1.09, label=rus_labels), size = 4, vjust=1, family = "Times New Roman")+
+  geom_segment(data=rotations(pca_bark),
+               aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75)+
+  scale_color_brewer(palette="Set1")+
+  labs(x = "ГК1 (40%)", y = "ГК2 (25%)")+
+  theme(legend.title = element_blank())+
+  stat_ellipse(aes(color = language))
+
+
+selected_all %>% 
+  group_by(language) %>% 
+  mutate(centroid_PC1 = mean(PC1), 
+         centroid_PC2 = mean(PC2),
+         distance = sqrt((PC1-centroid_PC1)^2+(PC2-centroid_PC2)^2),
+         mean_distance = mean(distance),
+         sd_distance = sd(distance)) %>% 
+  ungroup() ->
+  selected_all
+
+
+selected_all %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_point(alpha = 0.5)+
+  coord_equal() + 
+  labs(x = "ГК1 (40%)", y = "ГК2 (25%)")+
+  theme(legend.title = element_blank())+
+  scale_y_continuous(limits = c(-10, 5))+
+  scale_x_continuous(limits = c(-12, 5))
+
+
+
+
+selected_all %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
+  ggplot(aes(x=PC1, y=PC2)) + 
+  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+  geom_segment(aes(xend = centroid_PC1, yend = centroid_PC2), alpha = 0.8, linetype = 2)+
+  geom_point()+
+  geom_point(aes(x = centroid_PC1, y = centroid_PC2), size = 4, shape = 23, fill = "white")+
+  geom_text(aes(label = paste(round(mean_distance, 3), 
+                              "±", 
+                              round(sd_distance, 3))),
+            x = -6, y = -7, alpha = 0.05, family = "Times New Roman")+
+  coord_equal() + 
+  scale_color_brewer(palette="Set1")+
+  labs(x = "ГК1 (40%)", y = "ГК2 (25%)")+
+  theme(legend.position="bottom")+
+  facet_wrap(~language)
+
+selected_all %>% 
+  mutate(language = reorder(language, mean_distance)) %>% 
+  ggplot(aes(language, mean_distance))+
+  geom_pointrange(aes(ymin = mean_distance - sd_distance,
+                      ymax = mean_distance + sd_distance))+
+  coord_flip()+
+  labs(x = "", y = "")
+
+selected_all %>%
+  group_by(language) %>% 
+  mutate(centroid_PC1 = mean(PC1), 
+         centroid_PC2 = mean(PC2),
+         distance = sqrt((PC1-centroid_PC1)^2+(PC2-centroid_PC2)^2),
+         distance_sc = scale(distance),
+         mean_distance = mean(distance),
+         sd_distance = sd(distance),
+         sd_distance_sc = mean(distance_sc)) %>% 
+  ggplot(aes(distance_sc))+
+  geom_density()+
+  facet_wrap(~language)
+
+  ggplot(aes(language, mean_distance))+
+  geom_pointrange(aes(ymin = mean_distance - sd_distance,
+                      ymax = mean_distance + sd_distance))+
+  coord_flip()+
+  labs(x = "", y = "")
+
+
+selected[,c(3, 15, 16, 4, 10, 11)] %>% 
+  mutate_all(scale) %>% 
+  cor() %>% 
+  as.data.frame() %>% View()
+  mutate(variable_1 = c("max_Bark", 
+                        "cog_Bark",
+                        "sd_Bark",
+                        "slope_Bark",
+                        "skewness",
+                        "kurtosis")) %>% 
+  gather(variable_2, value, -variable_1) %>%
+  filter(value < 1) %>% 
+  arrange(desc(abs(value))) %>% 
+  slice(1:(n()/2)*2)
