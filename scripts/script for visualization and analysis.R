@@ -712,7 +712,7 @@ map.feature(
 
 
 # all graphs --------------------------------------------------------------
-setwd("/home/agricolamz/work/articles/2017 II s (with Inna Sieber)/github/data/")
+setwd("/home/agricolamz/work/articles/2018 II s (with Inna Sieber)/github/data/")
 selected <- read_tsv("final_dataset.tsv")
 pca_all <- prcomp(selected[,c(3:6, 8:11, 15, 16)], scale. = TRUE)
 pca_bark <- prcomp(selected[,c(3:4,15, 16, 10:11)], scale. = TRUE)
@@ -822,21 +822,6 @@ selected_all %>%
   ungroup() ->
   selected_all
 
-
-selected_all %>% 
-  ggplot(aes(x=PC1, y=PC2)) + 
-  geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
-  geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
-  geom_point(alpha = 0.5)+
-  coord_equal() + 
-  labs(x = "ГК1 (40%)", y = "ГК2 (25%)")+
-  theme(legend.title = element_blank())+
-  scale_y_continuous(limits = c(-10, 5))+
-  scale_x_continuous(limits = c(-12, 5))
-
-
-
-
 selected_all %>% 
   mutate(language = str_replace(language, "russian", "русский"),
          language = str_replace(language, "chukchi", "чукотский"),
@@ -880,17 +865,11 @@ selected_all %>%
   geom_density()+
   facet_wrap(~language)
 
-  ggplot(aes(language, mean_distance))+
-  geom_pointrange(aes(ymin = mean_distance - sd_distance,
-                      ymax = mean_distance + sd_distance))+
-  coord_flip()+
-  labs(x = "", y = "")
-
 
 selected[,c(3, 15, 16, 4, 10, 11)] %>% 
   mutate_all(scale) %>% 
   cor() %>% 
-  as.data.frame() %>% View()
+  as.data.frame() %>%
   mutate(variable_1 = c("max_Bark", 
                         "cog_Bark",
                         "sd_Bark",
@@ -901,3 +880,80 @@ selected[,c(3, 15, 16, 4, 10, 11)] %>%
   filter(value < 1) %>% 
   arrange(desc(abs(value))) %>% 
   slice(1:(n()/2)*2)
+
+outliers <- read_csv("outliers_bark.tsv") 
+dictors <- unique(outliers$dictor)
+    
+ggplotGrob(ggplot(data = outliers[outliers$dictor == dictors[1],],
+                    aes(x = value, y = power))+
+               geom_line(show.legend = FALSE)+
+               labs(x = "", y = "")+
+               theme(text = element_text(size = 14, family = "Times New Roman")))->
+    p1
+  
+ggplotGrob(ggplot(data = outliers[outliers$dictor == dictors[2],],
+                    aes(x = value, y = power))+
+               geom_line(show.legend = FALSE)+
+               labs(x = "", y = "")+
+               theme(text = element_text(size = 14, family = "Times New Roman")))->
+    p2
+  
+ggplotGrob(ggplot(data = outliers[outliers$dictor == dictors[3],],
+                    aes(x = value, y = power))+
+               geom_line(show.legend = FALSE)+
+               labs(x = "", y = "")+
+               theme(text = element_text(size = 14, family = "Times New Roman")))->
+    p3
+  
+ggplotGrob(ggplot(data = outliers[outliers$dictor == dictors[4],],
+                    aes(x = value, y = power))+
+               geom_line(show.legend = FALSE)+
+               labs(x = "", y = "")+
+               theme(text = element_text(size = 14, family = "Times New Roman")))->
+    p4
+  
+selected_all %>% 
+    ggplot(aes(x=PC1, y=PC2)) + 
+    annotation_custom(p1, xmin = -10, xmax = -2, ymin=-10, ymax=-2.5)+
+    annotation_custom(p2, xmin = -10, xmax = -2, ymin=11, ymax=3)+
+    annotation_custom(p3, xmin = 0, xmax = 8, ymin=-11, ymax=-3.5)+
+    annotation_custom(p4, xmin=0, xmax=8, ymin = 10, ymax = 2.5)+
+    geom_hline(aes(yintercept = 0), size=.4, lty = 2)+
+    geom_vline(aes(xintercept = 0), size=.4, lty = 2)+
+    geom_point(alpha = 0.5, color = "grey")+
+    geom_point(data = outliers)+
+    coord_equal() + 
+    labs(x = "ГК1 (40%)", y = "ГК2 (25%)")+
+    theme(legend.title = element_blank())+
+    scale_y_continuous(limits = c(-9, 10))+
+    scale_x_continuous(limits = c(-12, 7)) +
+    geom_segment(data = outliers, aes(xend = end_x, yend = end_y),
+                 arrow = arrow(length = unit(0.1, "inches")))
+
+selected %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
+  ggplot(aes(dictor, cog_Bark))+
+  geom_boxplot(aes(fill = language))+
+  geom_point()+
+  labs(title = "", y = "барки", x = "")+
+  theme(legend.position="bottom", legend.title = element_blank())+
+  scale_fill_brewer(palette="Set1") -> cog_2
+
+selected %>% 
+  mutate(language = str_replace(language, "russian", "русский"),
+         language = str_replace(language, "chukchi", "чукотский"),
+         language = str_replace(language, "adyghe", "адыгейский"),
+         language = str_replace(language, "nanai", "нанайский"),
+         language = str_replace(language, "udmurt", "удмуртский")) %>% 
+  ggplot(aes(dictor, cog))+
+  geom_boxplot(aes(fill = language), show.legend = FALSE)+
+  geom_point()+
+  labs(title = "Спектральный центр масс", y = "Герцы", x = "")+
+  theme(legend.position="bottom")+
+  scale_fill_brewer(palette="Set1") -> cog_1
+
+gridExtra::grid.arrange(cog_1, cog_2)
